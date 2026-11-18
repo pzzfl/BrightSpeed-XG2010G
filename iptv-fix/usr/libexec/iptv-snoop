@@ -1,0 +1,50 @@
+#!/bin/sh
+# 渐进式组播过滤（只放行机顶盒当前订阅的频道组）
+#   阶段1: 启动时放行当前所有在传组播 → 画面立刻正常
+#   阶段2: 捕获 IGMP 报告后，把放行集合收敛为「视频组」；换台时自动跟随
+# 注意: 239.255.255.250(SSDP)/224.0.0.x 是控制地址，不参与集合，已由独立规则放行
+SET="bridge iptv_snoop subs"
+CUR=""
+
+is_video_group() {
+	case "$1" in
+	239.255.255.250) return 1 ;;
+	224.*) return 1 ;;
+	22[4-9].*|23[0-9].*) return 0 ;;
+	esac
+	return 1
+}
+
+while [ ! -d /sys/class/net/br-iptv ]; do sleep 2; done
+sleep 8
+
+nft delete table bridge iptv_snoop 2>/dev/null
+nft -f /etc/iptv-snoop.nft 2>/dev/null || exit 1
+logger -t iptv-snoop "filter armed"
+
+# 阶段1
+timeout 3 tcpdump -i ct-iptv-mc -n -q 'ip multicast' 2>/dev/null \
+ | awk '{for(i=1;i<=NF;i++) if($i==">"){g=$(i+1); sub(/:.*/,"",g); sub(/\.[0-9]+$/,"",g); print g}}' \
+ | grep -E '^22[4-9]\.|^23[0-9]\.' | sort -u > /tmp/iptv-groups.txt
+n=0
+while read -r g; do
+	nft add element $SET "{ $g }" 2>/dev/null && n=$((n+1))
+done < /tmp/iptv-groups.txt
+logger -t iptv-snoop "stage1: seeded $n groups"
+
+# 阶段2
+tcpdump -i br-iptv -n -l igmp 2>/dev/null | while read -r line; do
+	case "$line" in
+	*" report "*)
+		g=$(printf '%s' "$line" | sed -n 's/.* report \([0-9]\{1,3\}\(\.[0-9]\{1,3\}\)\{3\}\).*/\1/p')
+		[ -n "$g" ] || continue
+		is_video_group "$g" || continue
+		[ "$g" = "$CUR" ] && continue
+		# 换台：重置为该频道
+		nft flush set $SET 2>/dev/null
+		nft add element $SET "{ $g timeout 12h }" 2>/dev/null
+		CUR="$g"
+		logger -t iptv-snoop "tracking channel group $g"
+		;;
+	esac
+done

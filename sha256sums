@@ -1,0 +1,7 @@
+09d1faca1c52e61788113146d503372e23a3d2cadceaf52d3ee8f2ec0c719c95 *immortalwrt-naoki66-20261115-5e152df9-airoha-an7581-gemtek_xg2010g-ubi-squashfs-sysupgrade.itb
+5cc598deabc948ce4fc94b8ae712ca90e1f72b16bf0e2932abb7a5736fe453d8 *install-iptv-fix.sh
+321b7135a1d37ed09717631406f0e51109e7225e7d28807bc980a2b73b306122 *刷机说明.md
+8af7f1cbbef284afb315d54f5c73202a29f8b4d86a1bea6ee7fb72b10f0ecec6 *iptv-fix/etc/init.d/zz-iptv-fix
+9990fdade06383c0709e2044006418cef33125e73b4c54f87ae7ed590cc7a637 *iptv-fix/etc/init.d/zz-iptv-snoop
+8b2aafc07e0737636d93694ed0f41a7b069bf79d17f6460e330e07ceb0f0e63b *iptv-fix/usr/libexec/iptv-snoop
+4932d30e541dbc8f64c35eeda245598796cb8125ebba00b51f78aec2f04d6da2 *iptv-fix/etc/iptv-snoop.nft
